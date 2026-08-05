@@ -1,0 +1,24 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Not South Ramp ✈{% endblock %}</title>
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{% block og_title %}Not South Ramp ✈{% endblock %}">
+  {% block og_image %}{% if og_image_url %}<meta property="og:image" content="{{ og_image_url }}">{% endif %}{% endblock %}
+
+  <link href="https://fonts.googleapis.com/css?family=VT323" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'cameras/css/camera.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <h1 class="title"><a href="{% url 'cameras:index' %}">NOT SOUTH RAMP ✈</a></h1>
+
+  {% block content %}{% endblock %}
+
+  {% block extra_body %}{% endblock %}
+</body>
+</html>

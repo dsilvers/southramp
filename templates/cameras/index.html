@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="locations">
+  {% for location in locations %}
+    {% if location.visible_cameras %}
+    <section class="location">
+      <h2 class="location-name">
+        <a href="{% url 'cameras:location_detail' slug=location.slug %}">{{ location.name }}</a>
+      </h2>
+      <div class="camera-grid">
+        {% for camera in location.visible_cameras %}
+        <a class="camera-tile" href="{% url 'cameras:camera_dispatch' identifier=camera.slug %}">
+          {% with img=camera.latest_image %}
+            {% if img %}
+              <img src="{{ img.file.url }}" alt="{{ camera.name }}">
+            {% else %}
+              <div class="camera-tile-empty">no image yet</div>
+            {% endif %}
+          {% endwith %}
+          <div class="camera-tile-name">{{ camera.name }}</div>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endblock %}

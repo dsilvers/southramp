@@ -1,0 +1,17 @@
+[Unit]
+Description=Southramp Django web app (gunicorn)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=southramp
+Group=southramp
+WorkingDirectory=/home/southramp/django
+EnvironmentFile=/home/southramp/django/.env
+Environment=PATH=/home/southramp/.pyenv/versions/southramp-django/bin
+ExecStart=/home/southramp/.pyenv/versions/southramp-django/bin/gunicorn -w 3 -b 127.0.0.1:8001 config.wsgi:application
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}{{ location.name }} - Not South Ramp ✈{% endblock %}
+{% block og_title %}{{ location.name }} - Not South Ramp ✈{% endblock %}
+
+{% block content %}
+<div class="locations">
+  <section class="location">
+    <h2 class="location-name">{{ location.name }}</h2>
+    <div class="camera-grid">
+      {% for camera in cameras %}
+      <a class="camera-tile" href="{% url 'cameras:camera_dispatch' identifier=camera.slug %}">
+        {% with img=camera.latest_image %}
+          {% if img %}
+            <img src="{{ img.file.url }}" alt="{{ camera.name }}">
+          {% else %}
+            <div class="camera-tile-empty">no image yet</div>
+          {% endif %}
+        {% endwith %}
+        <div class="camera-tile-name">{{ camera.name }}</div>
+      </a>
+      {% empty %}
+      <p>No cameras at this location.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

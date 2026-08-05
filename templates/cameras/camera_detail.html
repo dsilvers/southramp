@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load static camera_extras %}
+
+{% block title %}{{ camera.name }} - Not South Ramp ✈{% endblock %}
+{% block og_title %}{{ camera.name }} - Not South Ramp ✈{% endblock %}
+
+{% block content %}
+<div class="camera-detail" data-camera-slug="{{ camera.slug }}" data-page-size="{{ page_size }}">
+  <div class="main-image-wrap">
+    {% if latest %}
+      <img id="main-image" src="{{ latest.file.url }}" alt="{{ camera.name }}">
+      <div id="main-timestamp" class="timestamp-overlay {% if is_stale %}stale{% endif %}"
+           data-taken-at="{{ latest.taken_at.isoformat }}">
+        {{ latest.taken_at|date:"H:i" }}
+      </div>
+    {% else %}
+      <p class="no-image">No images yet.</p>
+    {% endif %}
+  </div>
+
+  <div id="strip" class="thumbnail-strip">
+    {% for img in strip %}
+      <img class="thumb {% if img|is_stale %}stale{% endif %}"
+           src="{{ img.file.url }}"
+           data-id="{{ img.pk }}"
+           data-taken-at="{{ img.taken_at.isoformat }}"
+           data-full="{{ img.file.url }}">
+    {% endfor %}
+    <div id="strip-loading" class="strip-loading" hidden>loading&hellip;</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_body %}
+<script src="{% static 'cameras/js/camera.js' %}"></script>
+{% endblock %}

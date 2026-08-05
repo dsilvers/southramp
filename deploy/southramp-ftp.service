@@ -1,0 +1,17 @@
+[Unit]
+Description=Southramp camera FTP ingest server
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=southramp
+Group=southramp
+WorkingDirectory=/home/southramp/django
+EnvironmentFile=/home/southramp/django/.env
+Environment=PATH=/home/southramp/.pyenv/versions/southramp-django/bin
+ExecStart=/home/southramp/.pyenv/versions/southramp-django/bin/python -m ftpserver.server
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
