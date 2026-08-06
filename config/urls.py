@@ -11,6 +11,7 @@ urlpatterns = [
     # DDNS service has no path field — it always requests /nic/update on
     # whatever host is entered as "Server").
     path("nic/update", cameras_views.ddns_update),
+    path("robots.txt", cameras_views.robots_txt),
     path("", include("cameras.urls")),
 ]
 

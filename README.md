@@ -5,6 +5,7 @@ one, and the **images** those cameras upload. Two independent paths feed
 images in: a small FTP server and a legacy-compatible HTTP endpoint.
 
 Live at https://southramp.com/. Admin at https://southramp.com/southramp-admin/.
+`/robots.txt` disallows all crawlers — this isn't meant to be indexed.
 
 ## Data model
 
@@ -17,13 +18,17 @@ Live at https://southramp.com/. Admin at https://southramp.com/southramp-admin/.
   `ip_updated_at`.
 - **Camera** — belongs to a Location. `name`, `slug`, `hidden`, `order`,
   plus identifiers used for ingestion:
-  - `id` — UUID primary key, generated once, never changes.
+  - `id` — UUID primary key, auto-generated but editable in admin.
   - `secret` — UUID, used in the HTTP upload URL. Editable, because
     onboarding an existing physical camera means typing in whatever
     secret is already baked into its firmware, not generating a new one.
   - `ftp_username` / `ftp_password` — 12-character alphanumeric, auto-generated
     on save if left blank, used for FTP login. Also editable, for the same
     reason.
+
+  Plus Remote Pull fields (see [Remote Pull](#remote-pull) below):
+  `remote_pull_enabled`, `remote_pull_use_location_ddns`, `remote_pull_url`,
+  `remote_pull_timeout` (seconds, default 7).
 - **Image** — belongs to a Camera. `file`, `taken_at` (when it was
   uploaded — set by the server at upload time, not by the client).
 - **UnrecognizedUpload** — an HTTP upload whose secret didn't match any
@@ -95,6 +100,35 @@ curl -u <username>:<password> "https://southramp.com/nic/update?myip=1.2.3.4"
 A Location with `dynamic_dns_enabled` unchecked rejects updates with
 `badauth`, same as a wrong password — flipping the checkbox is what
 actually turns updates on, independent of whether credentials exist.
+
+## Remote Pull
+
+The flip side of "Writing an upload script" (below): instead of something
+external pushing images to South Ramp, South Ramp can reach out and pull a
+snapshot itself, directly from a camera's own snapshot URL — useful when a
+camera is reachable straight from the server (e.g. over the location's
+router) and there's no need for a separate script running on-site.
+
+A cron job runs `manage.py pull_remote_images` every 2 minutes
+(`scripts/pull_remote_images.sh`, installed in the `southramp` crontab).
+For each Camera with `remote_pull_enabled` checked, it fetches
+`remote_pull_url` (timing out after `remote_pull_timeout` seconds, default
+7) and saves the result as a new `Image`, exactly like an FTP or HTTP
+upload would.
+
+If `remote_pull_use_location_ddns` is also checked, the URL's hostname is
+replaced with the Location's `last_known_ip` (see
+[Dynamic DNS](#dynamic-dns) above) before each fetch — for a camera behind
+a router with a dynamic IP, point `remote_pull_url` at whatever
+path/port/credentials the camera needs (e.g.
+`http://placeholder/cgi-bin/api.cgi?cmd=Snap&channel=1`) and the actual
+host gets swapped in at pull time. If the Location has no known IP yet,
+that camera is skipped (logged, not treated as an error) until a DDNS
+update arrives.
+
+The cron wrapper uses `flock` so overlapping runs are a no-op instead of
+piling up, and `timeout 5m` so a hung camera can't wedge the job forever —
+plain, well-tested tools rather than hand-rolled locking/timeout logic.
 
 ## Writing an upload script
 
@@ -179,12 +213,19 @@ A ready-to-copy version of the above lives at
   section — the enable checkbox, generated username/password, the
   endpoint URL to paste into the router, and the last IP/timestamp
   reported.
+- **Remote Pull**: a Camera's edit page has its own "Remote Pull" section
+  — the enable checkbox, the "use location DDNS" checkbox, the camera's
+  snapshot URL, and the request timeout. See
+  [Remote Pull](#remote-pull) above.
 
 ## Housekeeping
 
 A daily cron job (`southramp` user, 3:15am, see `crontab -l`) runs
 `scripts/delete_old_images.sh`, which deletes `Image` rows (and their
 files) older than 5 days via `manage.py delete_old_images`.
+
+A second cron job (`southramp` user, every 2 minutes) runs
+`scripts/pull_remote_images.sh` — see [Remote Pull](#remote-pull) above.
 
 ## Running locally
 

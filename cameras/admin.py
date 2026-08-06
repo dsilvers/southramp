@@ -48,13 +48,24 @@ class LocationAdmin(admin.ModelAdmin):
 
 @admin.register(Camera)
 class CameraAdmin(admin.ModelAdmin):
-    list_display = ("order", "name", "location", "slug", "hidden", "ftp_username")
+    list_display = ("order", "name", "location", "slug", "hidden", "ftp_username", "remote_pull_enabled")
     list_display_links = ("name",)
     list_editable = ("order",)
-    list_filter = ("hidden", "location")
+    list_filter = ("hidden", "location", "remote_pull_enabled")
     search_fields = ("name", "ftp_username")
     ordering = ("location__order", "location__name", "order", "name")
-    readonly_fields = ("id",)
+    fieldsets = (
+        (None, {"fields": ("location", "name", "slug", "hidden", "order")}),
+        ("Ingestion", {"fields": ("id", "secret", "ftp_username", "ftp_password")}),
+        ("Remote Pull", {
+            "fields": (
+                "remote_pull_enabled",
+                "remote_pull_use_location_ddns",
+                "remote_pull_url",
+                "remote_pull_timeout",
+            ),
+        }),
+    )
 
 
 @admin.register(Image)

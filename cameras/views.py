@@ -28,6 +28,10 @@ def _client_ip(request):
     return request.META.get("REMOTE_ADDR")
 
 
+def robots_txt(request):
+    return HttpResponse("User-agent: *\nDisallow: /\n", content_type="text/plain")
+
+
 def index(request):
     locations = Location.objects.filter(hidden=False).prefetch_related("cameras")
     for loc in locations:

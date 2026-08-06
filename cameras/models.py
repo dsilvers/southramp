@@ -56,7 +56,7 @@ class Location(models.Model):
 
 
 class Camera(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     secret = models.UUIDField(default=uuid.uuid4)
 
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="cameras")
@@ -67,6 +67,17 @@ class Camera(models.Model):
     ftp_username = models.CharField(max_length=12, unique=True, blank=True)
     ftp_password = models.CharField(max_length=12, blank=True)
     order = models.PositiveIntegerField(default=0)
+
+    remote_pull_enabled = models.BooleanField(default=False)
+    remote_pull_use_location_ddns = models.BooleanField(
+        default=False,
+        help_text="Replace the camera URL's hostname with the location's dynamic DNS IP before each pull.",
+    )
+    remote_pull_url = models.CharField(
+        max_length=500, blank=True,
+        help_text="The camera's own snapshot URL, e.g. http://10.0.0.3/cgi-bin/api.cgi?cmd=Snap&channel=1",
+    )
+    remote_pull_timeout = models.PositiveIntegerField(default=7, help_text="Request timeout, in seconds.")
 
     class Meta:
         ordering = ["location__order", "location__name", "order", "name"]
