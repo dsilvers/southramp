@@ -64,8 +64,8 @@ class Camera(models.Model):
     slug = models.SlugField(blank=True)
     hidden = models.BooleanField(default=False)
 
-    ftp_username = models.CharField(max_length=12, unique=True, blank=True)
-    ftp_password = models.CharField(max_length=12, blank=True)
+    ftp_username = models.CharField(max_length=100, unique=True, blank=True)
+    ftp_password = models.CharField(max_length=100, blank=True)
     order = models.PositiveIntegerField(default=0)
 
     remote_pull_enabled = models.BooleanField(default=False)
