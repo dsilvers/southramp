@@ -170,6 +170,12 @@ temporary (302) redirect to the actual resized JPEG's URL, so it's safe
 to drop straight into an `<img src>` on another site — the browser
 follows the redirect and caches against the real file, not this URL.
 
+A second legacy URL, `GET /thumb/<camera-id>/<width>/<anything>` (e.g.
+`/thumb/b2827d68-2fff-4059-901d-18758966a371/1080/1080`), behaves
+identically — same redirect, same fallback. The trailing integer is part
+of the old app's URL shape but isn't used for anything here (embeds are
+only ever generated at a fixed width, no separate height/aspect variants).
+
 If the camera doesn't exist, doesn't have embedding enabled, has no
 images yet, or just doesn't have one generated at that specific width
 (e.g. it was requested before `embed_sizes` included it), the redirect

@@ -183,7 +183,7 @@ def camera_images_json(request, location_slug, camera_slug):
     })
 
 
-def embed_redirect(request, camera_id, width):
+def embed_redirect(request, camera_id, width, ignored=None):
     camera = Camera.objects.filter(pk=camera_id, embed_enabled=True).first()
     if camera is not None:
         latest = camera.latest_image
