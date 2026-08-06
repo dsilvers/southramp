@@ -8,7 +8,7 @@ from django.utils.text import slugify
 ALPHANUMERIC = string.ascii_letters + string.digits
 
 
-def generate_ftp_credential(length=12):
+def generate_credential(length=12):
     return "".join(random.choices(ALPHANUMERIC, k=length))
 
 
@@ -18,12 +18,22 @@ class Location(models.Model):
     hidden = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
 
+    dynamic_dns_enabled = models.BooleanField(default=False)
+    dynamic_dns_username = models.CharField(max_length=12, unique=True, blank=True)
+    dynamic_dns_password = models.CharField(max_length=12, blank=True)
+    last_known_ip = models.GenericIPAddressField(null=True, blank=True)
+    ip_updated_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         ordering = ["order", "name"]
 
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = self._generate_unique_slug()
+        if not self.dynamic_dns_username:
+            self.dynamic_dns_username = self._generate_unique_dynamic_dns_username()
+        if not self.dynamic_dns_password:
+            self.dynamic_dns_password = generate_credential()
         super().save(*args, **kwargs)
 
     def _generate_unique_slug(self):
@@ -34,6 +44,12 @@ class Location(models.Model):
             n += 1
             slug = f"{base}-{n}"
         return slug
+
+    def _generate_unique_dynamic_dns_username(self):
+        while True:
+            candidate = generate_credential()
+            if not Location.objects.filter(dynamic_dns_username=candidate).exists():
+                return candidate
 
     def __str__(self):
         return self.name
@@ -61,7 +77,7 @@ class Camera(models.Model):
         if not self.ftp_username:
             self.ftp_username = self._generate_unique_ftp_username()
         if not self.ftp_password:
-            self.ftp_password = generate_ftp_credential()
+            self.ftp_password = generate_credential()
         super().save(*args, **kwargs)
 
     def _generate_unique_slug(self):
@@ -75,7 +91,7 @@ class Camera(models.Model):
 
     def _generate_unique_ftp_username(self):
         while True:
-            candidate = generate_ftp_credential()
+            candidate = generate_credential()
             if not Camera.objects.filter(ftp_username=candidate).exists():
                 return candidate
 

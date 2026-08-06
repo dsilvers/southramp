@@ -9,7 +9,12 @@ Live at https://southramp.com/. Admin at https://southramp.com/southramp-admin/.
 ## Data model
 
 - **Location** — `name`, `slug` (auto-generated from name), `hidden`,
-  `order` (plain integer, lower sorts first; ties break on name).
+  `order` (plain integer, lower sorts first; ties break on name), plus
+  Dynamic DNS fields (see [Dynamic DNS](#dynamic-dns) below):
+  `dynamic_dns_enabled`, `dynamic_dns_username` / `dynamic_dns_password`
+  (12-character alphanumeric, auto-generated on save if left blank — same
+  pattern as `Camera.ftp_username`/`ftp_password` below), `last_known_ip`,
+  `ip_updated_at`.
 - **Camera** — belongs to a Location. `name`, `slug`, `hidden`, `order`,
   plus identifiers used for ingestion:
   - `id` — UUID primary key, generated once, never changes.
@@ -51,6 +56,45 @@ file field must be named `image`. See `scripts/camera_upload_example.py`
 for a minimal working example. If the secret doesn't match any camera,
 the upload is kept as an `UnrecognizedUpload` instead of an `Image`, and
 shows up in admin so you can create the matching Camera.
+
+## Dynamic DNS
+
+Each Location's site router can report its current public IP so we always
+know how to reach it, without us having to go poke someone to ask. This
+piggybacks on the "Custom" Dynamic DNS service most routers (UniFi
+included) already support — no VPN, no extra hardware.
+
+The router speaks the old dyndns2 protocol: a plain HTTP GET with HTTP
+Basic Auth, no request body. South Ramp exposes that at a fixed path:
+
+```
+GET https://southramp.com/nic/update?hostname=<anything>&myip=<ip>
+Authorization: Basic <base64 username:password>
+```
+
+- `myip` is optional — if the router doesn't send it, the server falls
+  back to the IP the request actually came from.
+- `hostname` is accepted but ignored for lookup; the username alone
+  identifies the Location (each Location's dyndns2 username/password is
+  unique to it), so there's nothing else to disambiguate.
+- Response body is `good <ip>` on success or `badauth` if the
+  username/password don't match an enabled Location — same convention
+  dyndns2 clients already expect.
+
+**UniFi setup** (matches the Dynamic DNS dialog's fields): Service =
+`Custom`, Hostname = anything (unused, e.g. the location's name), Username
+/ Password = the values generated on that Location's admin page, Server =
+`southramp.com`.
+
+**Manual test:**
+
+```
+curl -u <username>:<password> "https://southramp.com/nic/update?myip=1.2.3.4"
+```
+
+A Location with `dynamic_dns_enabled` unchecked rejects updates with
+`badauth`, same as a wrong password — flipping the checkbox is what
+actually turns updates on, independent of whether credentials exist.
 
 ## Writing an upload script
 
@@ -131,6 +175,10 @@ A ready-to-copy version of the above lives at
 - **Unrecognized uploads**: `/southramp-admin/cameras/unrecognizedupload/`
   shows a thumbnail and a "Create camera" link that pre-fills the secret
   on a new Camera's add form.
+- **Dynamic DNS**: a Location's edit page has its own "Dynamic DNS"
+  section — the enable checkbox, generated username/password, the
+  endpoint URL to paste into the router, and the last IP/timestamp
+  reported.
 
 ## Housekeeping
 

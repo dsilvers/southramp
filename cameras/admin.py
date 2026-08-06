@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 from django.utils.html import format_html
 
@@ -6,15 +7,43 @@ from .models import Camera, Image, Location, UnrecognizedUpload
 
 @admin.register(Location)
 class LocationAdmin(admin.ModelAdmin):
-    list_display = ("order", "name", "slug", "hidden", "camera_count")
+    list_display = ("order", "name", "slug", "hidden", "camera_count", "last_known_ip")
     list_display_links = ("name",)
     list_editable = ("order",)
     list_filter = ("hidden",)
     search_fields = ("name",)
     ordering = ("order", "name")
+    readonly_fields = (
+        "dynamic_dns_username",
+        "dynamic_dns_password",
+        "dynamic_dns_endpoint",
+        "last_known_ip",
+        "ip_updated_at",
+    )
+    fieldsets = (
+        (None, {"fields": ("name", "slug", "hidden", "order")}),
+        ("Dynamic DNS", {
+            "fields": (
+                "dynamic_dns_enabled",
+                "dynamic_dns_username",
+                "dynamic_dns_password",
+                "dynamic_dns_endpoint",
+                "last_known_ip",
+                "ip_updated_at",
+            ),
+        }),
+    )
 
     def camera_count(self, obj):
         return obj.cameras.count()
+
+    def dynamic_dns_endpoint(self, obj):
+        return format_html("<code>{}</code>/nic/update", self._domain())
+
+    dynamic_dns_endpoint.short_description = "Endpoint (for UniFi's \"Server\" field)"
+
+    def _domain(self):
+        return settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else "<your-domain>"
 
 
 @admin.register(Camera)

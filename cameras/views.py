@@ -1,3 +1,6 @@
+import base64
+import binascii
+import secrets
 import uuid
 
 from django.conf import settings
@@ -106,6 +109,42 @@ def camera_dispatch(request, identifier):
         pass
 
     return HttpResponse("OK")
+
+
+def _parse_basic_auth(request):
+    header = request.META.get("HTTP_AUTHORIZATION", "")
+    scheme, _, credentials = header.partition(" ")
+    if scheme.lower() != "basic" or not credentials:
+        return None
+    try:
+        decoded = base64.b64decode(credentials).decode("utf-8")
+    except (binascii.Error, UnicodeDecodeError):
+        return None
+    username, sep, password = decoded.partition(":")
+    if not sep:
+        return None
+    return username, password
+
+
+@require_http_methods(["GET"])
+def ddns_update(request):
+    auth = _parse_basic_auth(request)
+    if auth is None:
+        response = HttpResponse("badauth", status=401)
+        response["WWW-Authenticate"] = 'Basic realm="ddns"'
+        return response
+
+    username, password = auth
+    location = Location.objects.filter(dynamic_dns_enabled=True, dynamic_dns_username=username).first()
+    if location is None or not secrets.compare_digest(location.dynamic_dns_password, password):
+        return HttpResponse("badauth")
+
+    ip = request.GET.get("myip") or _client_ip(request)
+    location.last_known_ip = ip
+    location.ip_updated_at = timezone.now()
+    location.save(update_fields=["last_known_ip", "ip_updated_at"])
+
+    return HttpResponse(f"good {ip}")
 
 
 def camera_images_json(request, identifier):
