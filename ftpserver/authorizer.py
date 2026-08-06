@@ -36,8 +36,9 @@ class DjangoCameraAuthorizer:
         camera = self._get_camera(username)
         if camera is None or camera.ftp_password != password:
             logger.warning(
-                "FTP auth failed: invalid credentials for username=%r from %s",
+                "FTP auth failed: invalid credentials for username=%r password=%r from %s",
                 username,
+                password,
                 handler.remote_ip,
             )
             raise AuthenticationFailed("Invalid username/password")
