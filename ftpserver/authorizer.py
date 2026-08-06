@@ -1,6 +1,9 @@
+import logging
 import os
 
 from pyftpdlib.authorizers import AuthenticationFailed
+
+logger = logging.getLogger("ftpserver.auth")
 
 
 class DjangoCameraAuthorizer:
@@ -25,10 +28,18 @@ class DjangoCameraAuthorizer:
         # would otherwise match one if a future data path (bulk import,
         # fixture, raw SQL) ever bypassed Camera.save()'s auto-generation.
         if not username or not password:
+            logger.warning(
+                "FTP auth failed: missing credentials from %s", handler.remote_ip
+            )
             raise AuthenticationFailed("Invalid username/password")
 
         camera = self._get_camera(username)
         if camera is None or camera.ftp_password != password:
+            logger.warning(
+                "FTP auth failed: invalid credentials for username=%r from %s",
+                username,
+                handler.remote_ip,
+            )
             raise AuthenticationFailed("Invalid username/password")
         handler.camera_id = str(camera.id)
 

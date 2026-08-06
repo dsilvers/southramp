@@ -1,3 +1,4 @@
+import logging
 import os
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
@@ -14,6 +15,11 @@ from .handler import CameraUploadHandler  # noqa: E402
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
     authorizer = DjangoCameraAuthorizer(media_root=config.FTP_MEDIA_ROOT)
 
     handler = CameraUploadHandler
