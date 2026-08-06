@@ -11,8 +11,12 @@ urlpatterns = [
     # redirect turns a 301-redirected POST into a GET, dropping the upload.
     path("camera/<str:identifier>", views.camera_dispatch),
     path("camera/<str:identifier>/", views.camera_dispatch, name="camera_dispatch"),
-    path("camera/<str:identifier>/images/", views.camera_images_json, name="camera_images_json"),
+    # Matches the old app's embed URL exactly, including the lack of a
+    # trailing slash — third-party pages already embed this shape.
+    path("embed/<uuid:camera_id>/<int:width>", views.embed_redirect, name="embed_redirect"),
+    path("<slug:location_slug>/<slug:camera_slug>/images/", views.camera_images_json, name="camera_images_json"),
+    path("<slug:location_slug>/<slug:camera_slug>/", views.camera_detail, name="camera_detail"),
     # Kept last: a bare "<slug>/" is the most generic pattern here, so it
-    # must not shadow the more specific "camera/..." routes above it.
+    # must not shadow the more specific routes above it.
     path("<slug:slug>/", views.location_detail, name="location_detail"),
 ]

@@ -9,7 +9,7 @@
       </h2>
       <div class="camera-grid">
         {% for camera in location.visible_cameras %}
-        <a class="camera-tile" href="{% url 'cameras:camera_dispatch' identifier=camera.slug %}">
+        <a class="camera-tile" href="{% url 'cameras:camera_detail' location_slug=location.slug camera_slug=camera.slug %}">
           {% with img=camera.latest_image %}
             {% if img %}
               <img src="{{ img.file.url }}" alt="{{ camera.name }}">

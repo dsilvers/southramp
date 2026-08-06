@@ -45,7 +45,34 @@ def save_camera_image(camera, file_obj, original_filename):
     jpg_bytes, jpg_filename = normalize_to_jpg(file_obj, original_filename)
     image = Image(camera=camera, taken_at=timezone.now())
     image.file.save(jpg_filename, ContentFile(jpg_bytes), save=True)
+    generate_embed_images(image)
     return image
+
+
+def generate_embed_images(image):
+    """Generates one resized EmbedImage per configured width, for cameras with embedding enabled."""
+    from .models import EmbedImage
+
+    camera = image.camera
+    if not camera.embed_enabled:
+        return
+    widths = camera.embed_widths()
+    if not widths:
+        return
+
+    image.file.open("rb")
+    try:
+        with PILImage.open(image.file) as im:
+            im = im.convert("RGB")
+            original_width, original_height = im.size
+            for width in widths:
+                height = round(original_height * (width / original_width))
+                buf = io.BytesIO()
+                im.resize((width, height)).save(buf, "JPEG")
+                embed = EmbedImage(image=image, width=width)
+                embed.file.save(f"{width}.jpg", ContentFile(buf.getvalue()), save=True)
+    finally:
+        image.file.close()
 
 
 def save_unrecognized_upload(secret, file_obj, original_filename, remote_addr=None):

@@ -5,7 +5,7 @@
 {% block og_title %}{{ camera.name }} - Not South Ramp ✈{% endblock %}
 
 {% block content %}
-<div class="camera-detail" data-camera-slug="{{ camera.slug }}" data-page-size="{{ page_size }}">
+<div class="camera-detail" data-location-slug="{{ camera.location.slug }}" data-camera-slug="{{ camera.slug }}" data-page-size="{{ page_size }}">
   <div class="main-image-wrap">
     {% if latest %}
       <img id="main-image" src="{{ latest.file.url }}" alt="{{ camera.name }}">

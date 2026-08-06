@@ -61,7 +61,7 @@ class Camera(models.Model):
 
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="cameras")
     name = models.CharField(max_length=100)
-    slug = models.SlugField(unique=True, blank=True)
+    slug = models.SlugField(blank=True)
     hidden = models.BooleanField(default=False)
 
     ftp_username = models.CharField(max_length=12, unique=True, blank=True)
@@ -79,8 +79,17 @@ class Camera(models.Model):
     )
     remote_pull_timeout = models.PositiveIntegerField(default=7, help_text="Request timeout, in seconds.")
 
+    embed_enabled = models.BooleanField(default=False)
+    embed_sizes = models.CharField(
+        max_length=255, blank=True,
+        help_text="Comma-separated pixel widths to generate for embedding, e.g. 400,800,1200",
+    )
+
     class Meta:
         ordering = ["location__order", "location__name", "order", "name"]
+        constraints = [
+            models.UniqueConstraint(fields=["location", "slug"], name="unique_camera_slug_per_location"),
+        ]
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -95,7 +104,7 @@ class Camera(models.Model):
         base = slugify(self.name)
         slug = base
         n = 1
-        while Camera.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+        while Camera.objects.filter(location=self.location, slug=slug).exclude(pk=self.pk).exists():
             n += 1
             slug = f"{base}-{n}"
         return slug
@@ -109,6 +118,14 @@ class Camera(models.Model):
     @property
     def latest_image(self):
         return self.images.order_by("-taken_at").first()
+
+    def embed_widths(self):
+        widths = []
+        for part in self.embed_sizes.split(","):
+            part = part.strip()
+            if part.isdigit():
+                widths.append(int(part))
+        return widths
 
     def __str__(self):
         return f"{self.location.name} / {self.name}"
@@ -129,6 +146,24 @@ class Image(models.Model):
 
     def __str__(self):
         return f"{self.camera.name} @ {self.taken_at:%Y-%m-%d %H:%M}"
+
+
+def embed_image_upload_to(instance, filename):
+    return f"embeds/{instance.image.camera_id}/{instance.image_id}/{filename}"
+
+
+class EmbedImage(models.Model):
+    image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="embeds")
+    width = models.PositiveIntegerField()
+    file = models.ImageField(upload_to=embed_image_upload_to)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["image", "width"], name="unique_embed_image_width"),
+        ]
+
+    def __str__(self):
+        return f"{self.image} @ {self.width}px"
 
 
 class UnrecognizedUpload(models.Model):

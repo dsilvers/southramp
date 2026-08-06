@@ -6,7 +6,7 @@ from django.db import transaction
 from django.shortcuts import render
 from django.utils.html import format_html
 
-from .models import Camera, Image, Location, UnrecognizedUpload, generate_credential
+from .models import Camera, EmbedImage, Image, Location, UnrecognizedUpload, generate_credential
 
 
 class ChangeCameraIdForm(forms.Form):
@@ -75,6 +75,7 @@ class CameraAdmin(admin.ModelAdmin):
                 "remote_pull_timeout",
             ),
         }),
+        ("Embed", {"fields": ("embed_enabled", "embed_sizes")}),
     )
 
     @admin.action(description="Change ID for selected camera")
@@ -133,6 +134,8 @@ class CameraAdmin(admin.ModelAdmin):
                 remote_pull_use_location_ddns=camera.remote_pull_use_location_ddns,
                 remote_pull_url=camera.remote_pull_url,
                 remote_pull_timeout=camera.remote_pull_timeout,
+                embed_enabled=camera.embed_enabled,
+                embed_sizes=camera.embed_sizes,
             )
             Image.objects.filter(camera_id=camera.pk).update(camera=new_camera)
             Camera.objects.filter(pk=camera.pk).delete()
@@ -142,6 +145,13 @@ class CameraAdmin(admin.ModelAdmin):
 class ImageAdmin(admin.ModelAdmin):
     list_display = ("camera", "taken_at")
     list_filter = ("camera",)
+
+
+@admin.register(EmbedImage)
+class EmbedImageAdmin(admin.ModelAdmin):
+    list_display = ("image", "width")
+    list_filter = ("width",)
+    readonly_fields = ("image", "width", "file")
 
 
 @admin.register(UnrecognizedUpload)

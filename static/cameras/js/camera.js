@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const root = document.querySelector(".camera-detail");
   if (!root) return;
 
+  const locationSlug = root.dataset.locationSlug;
   const slug = root.dataset.cameraSlug;
   const strip = document.getElementById("strip");
   const loadingEl = document.getElementById("strip-loading");
@@ -36,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const lastId = thumbs.length ? thumbs[thumbs.length - 1].dataset.id : "";
 
     try {
-      const resp = await fetch(`/camera/${slug}/images/?before_id=${lastId}`);
+      const resp = await fetch(`/${locationSlug}/${slug}/images/?before_id=${lastId}`);
       const data = await resp.json();
 
       data.images.forEach((img) => {

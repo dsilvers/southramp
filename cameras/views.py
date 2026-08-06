@@ -4,14 +4,17 @@ import secrets
 import uuid
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.templatetags.static import static
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .models import Camera, Image, Location
 from .utils import InvalidImageError, save_camera_image, save_unrecognized_upload
+
+CAMERA_UNAVAILABLE_IMAGE = "cameras/img/camera-unavailable.jpg"
 
 
 def _is_stale(image):
@@ -68,8 +71,8 @@ def location_detail(request, slug):
     })
 
 
-def _camera_detail(request, slug):
-    camera = get_object_or_404(Camera, slug=slug)
+def camera_detail(request, location_slug, camera_slug):
+    camera = get_object_or_404(Camera, location__slug=location_slug, slug=camera_slug)
     images = list(camera.images.order_by("-taken_at")[: settings.CAMERA_STRIP_INITIAL + 1])
     latest = images[0] if images else None
     strip = images[1:]
@@ -87,11 +90,8 @@ def _camera_detail(request, slug):
 
 
 @csrf_exempt
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["POST"])
 def camera_dispatch(request, identifier):
-    if request.method == "GET":
-        return _camera_detail(request, identifier)
-
     try:
         secret = uuid.UUID(identifier)
     except ValueError:
@@ -151,8 +151,8 @@ def ddns_update(request):
     return HttpResponse(f"good {ip}")
 
 
-def camera_images_json(request, identifier):
-    camera = get_object_or_404(Camera, slug=identifier)
+def camera_images_json(request, location_slug, camera_slug):
+    camera = get_object_or_404(Camera, location__slug=location_slug, slug=camera_slug)
 
     try:
         before_id = int(request.GET.get("before_id", 0)) or None
@@ -181,3 +181,15 @@ def camera_images_json(request, identifier):
         ],
         "has_more": has_more,
     })
+
+
+def embed_redirect(request, camera_id, width):
+    camera = Camera.objects.filter(pk=camera_id, embed_enabled=True).first()
+    if camera is not None:
+        latest = camera.latest_image
+        if latest is not None:
+            embed = latest.embeds.filter(width=width).first()
+            if embed is not None:
+                return HttpResponseRedirect(embed.file.url)
+
+    return HttpResponseRedirect(static(CAMERA_UNAVAILABLE_IMAGE))

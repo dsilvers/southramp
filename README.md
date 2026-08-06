@@ -16,9 +16,15 @@ Live at https://southramp.com/. Admin at https://southramp.com/southramp-admin/.
   (12-character alphanumeric, auto-generated on save if left blank — same
   pattern as `Camera.ftp_username`/`ftp_password` below), `last_known_ip`,
   `ip_updated_at`.
-- **Camera** — belongs to a Location. `name`, `slug`, `hidden`, `order`,
-  plus identifiers used for ingestion:
-  - `id` — UUID primary key, auto-generated but editable in admin.
+- **Camera** — belongs to a Location. `name`, `slug` (unique per-Location,
+  not globally — see the URL note below), `hidden`, `order`, plus
+  identifiers used for ingestion:
+  - `id` — UUID primary key, auto-generated and not directly editable
+    (Django decides insert-vs-update by primary key value, so a plain
+    "edit this field" doesn't rename a row — it either errors or creates
+    a duplicate). To actually change one, select the camera in the admin
+    list and use the **Change ID** action, which creates the new row,
+    re-points its Images, and deletes the old row atomically.
   - `secret` — UUID, used in the HTTP upload URL. Editable, because
     onboarding an existing physical camera means typing in whatever
     secret is already baked into its firmware, not generating a new one.
@@ -28,18 +34,29 @@ Live at https://southramp.com/. Admin at https://southramp.com/southramp-admin/.
 
   Plus Remote Pull fields (see [Remote Pull](#remote-pull) below):
   `remote_pull_enabled`, `remote_pull_use_location_ddns`, `remote_pull_url`,
-  `remote_pull_timeout` (seconds, default 7).
+  `remote_pull_timeout` (seconds, default 7); and Embed fields (see
+  [Embedding](#embedding) below): `embed_enabled`, `embed_sizes`.
 - **Image** — belongs to a Camera. `file`, `taken_at` (when it was
   uploaded — set by the server at upload time, not by the client).
+- **EmbedImage** — a resized copy of an Image at one configured width, for
+  embedding. See [Embedding](#embedding) below.
 - **UnrecognizedUpload** — an HTTP upload whose secret didn't match any
   Camera. Kept around (with an image preview and a "Create camera" link)
   in admin so you can identify hardware that hasn't been onboarded yet.
 
 `hidden` on a Location or Camera means "not listed on the front page" —
-not "blocked". If you have the direct link (`/camera/<slug>/` or
-`/<location-slug>/`), it works regardless of the hidden flag. A Location's
-detail page (`/<location-slug>/`) also always shows *all* of its cameras,
-hidden or not, once you're looking at that specific location.
+not "blocked". If you have the direct link (`/<location-slug>/<camera-slug>/`
+or `/<location-slug>/`), it works regardless of the hidden flag. A
+Location's detail page (`/<location-slug>/`) also always shows *all* of
+its cameras, hidden or not, once you're looking at that specific
+location.
+
+A camera's public detail page lives at `/<location-slug>/<camera-slug>/`
+rather than a bare `/camera/<slug>/` — camera slugs are only unique
+*within* a Location (two Locations can each have a camera slugged `cam1`),
+so the URL needs the Location to disambiguate. `/camera/<secret>/` is a
+separate, unrelated path used only for uploads (see below) and never
+shown to people.
 
 ## Ingesting images
 
@@ -130,6 +147,40 @@ The cron wrapper uses `flock` so overlapping runs are a no-op instead of
 piling up, and `timeout 5m` so a hung camera can't wedge the job forever —
 plain, well-tested tools rather than hand-rolled locking/timeout logic.
 
+## Embedding
+
+A Camera with `embed_enabled` checked and `embed_sizes` set to a
+comma-separated list of pixel widths (e.g. `400,800,1200`) gets a resized
+JPEG generated at each of those widths every time it receives a new
+image — whether that image arrived over FTP, HTTP upload, or Remote Pull,
+since all three funnel through the same `save_camera_image()` call.
+Resizing preserves aspect ratio (only the width is specified) and always
+outputs JPEG regardless of the source format.
+
+Each camera then has a stable embed URL per configured width:
+
+```
+GET https://southramp.com/embed/<camera-id>/<width>
+```
+
+e.g. `https://southramp.com/embed/6f0f27ea-6831-4958-a425-6e5d037678de/800`
+— note the lack of a trailing slash, which is intentional (matches how
+this was embedded on third-party pages previously). It's a plain
+temporary (302) redirect to the actual resized JPEG's URL, so it's safe
+to drop straight into an `<img src>` on another site — the browser
+follows the redirect and caches against the real file, not this URL.
+
+If the camera doesn't exist, doesn't have embedding enabled, has no
+images yet, or just doesn't have one generated at that specific width
+(e.g. it was requested before `embed_sizes` included it), the redirect
+instead points at a static "Camera Unavailable" placeholder
+(`static/cameras/img/camera-unavailable.jpg`) rather than 404ing — an
+embedded `<img>` tag has no good way to react to an error response, so
+this keeps it always resolving to *something* renderable.
+
+`EmbedImage` rows are deleted (both the DB row and the file) whenever
+their parent `Image` is cleaned up — see [Housekeeping](#housekeeping).
+
 ## Writing an upload script
 
 Most cameras don't speak this system's protocol natively, so the usual
@@ -217,12 +268,20 @@ A ready-to-copy version of the above lives at
   — the enable checkbox, the "use location DDNS" checkbox, the camera's
   snapshot URL, and the request timeout. See
   [Remote Pull](#remote-pull) above.
+- **Embed**: a Camera's edit page has its own "Embed" section — the
+  enable checkbox and the comma-separated list of widths. See
+  [Embedding](#embedding) above.
+- **Change ID**: select one Camera in the Camera list and use the
+  "Change ID" action to safely change its primary key. See the `id`
+  bullet under [Data model](#data-model) above for why this needs to be
+  a dedicated action rather than an editable field.
 
 ## Housekeeping
 
 A daily cron job (`southramp` user, 3:15am, see `crontab -l`) runs
 `scripts/delete_old_images.sh`, which deletes `Image` rows (and their
-files) older than 5 days via `manage.py delete_old_images`.
+files, and any `EmbedImage` rows/files generated from them) older than 5
+days via `manage.py delete_old_images`.
 
 A second cron job (`southramp` user, every 2 minutes) runs
 `scripts/pull_remote_images.sh` — see [Remote Pull](#remote-pull) above.
