@@ -1,0 +1,20 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<p>
+  Change ID for <strong>{{ camera }}</strong> (currently <code>{{ camera.pk }}</code>).
+</p>
+<p>
+  This creates a new Camera row with the new ID, re-points its existing
+  Images to it, and deletes the old row. <code>secret</code>, FTP
+  credentials, and Remote Pull settings all carry over unchanged.
+</p>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <input type="hidden" name="action" value="change_id">
+  <input type="hidden" name="{{ action_checkbox_name }}" value="{{ camera.pk }}">
+  <input type="submit" name="apply" value="Change ID" class="default">
+  <a href="." class="button cancel-link">No, take me back</a>
+</form>
+{% endblock %}

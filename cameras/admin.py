@@ -1,8 +1,16 @@
+from django import forms
 from django.conf import settings
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.contrib.admin import helpers
+from django.db import transaction
+from django.shortcuts import render
 from django.utils.html import format_html
 
-from .models import Camera, Image, Location, UnrecognizedUpload
+from .models import Camera, Image, Location, UnrecognizedUpload, generate_credential
+
+
+class ChangeCameraIdForm(forms.Form):
+    new_id = forms.UUIDField(label="New ID")
 
 
 @admin.register(Location)
@@ -54,6 +62,8 @@ class CameraAdmin(admin.ModelAdmin):
     list_filter = ("hidden", "location", "remote_pull_enabled")
     search_fields = ("name", "ftp_username")
     ordering = ("location__order", "location__name", "order", "name")
+    readonly_fields = ("id",)
+    actions = ["change_id"]
     fieldsets = (
         (None, {"fields": ("location", "name", "slug", "hidden", "order")}),
         ("Ingestion", {"fields": ("id", "secret", "ftp_username", "ftp_password")}),
@@ -66,6 +76,66 @@ class CameraAdmin(admin.ModelAdmin):
             ),
         }),
     )
+
+    @admin.action(description="Change ID for selected camera")
+    def change_id(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(request, "Select exactly one camera to change its ID.", level=messages.ERROR)
+            return
+
+        camera = queryset.first()
+
+        if "apply" in request.POST:
+            form = ChangeCameraIdForm(request.POST)
+            if form.is_valid():
+                new_id = form.cleaned_data["new_id"]
+                if Camera.objects.filter(pk=new_id).exists():
+                    form.add_error("new_id", "A camera with this ID already exists.")
+                else:
+                    self._rename_camera_id(camera, new_id)
+                    self.message_user(request, f"Changed {camera.name}'s ID to {new_id}.")
+                    return
+        else:
+            form = ChangeCameraIdForm(initial={"new_id": camera.pk})
+
+        return render(request, "admin/cameras/camera/change_id.html", {
+            "camera": camera,
+            "form": form,
+            "opts": self.model._meta,
+            "action_checkbox_name": helpers.ACTION_CHECKBOX_NAME,
+        })
+
+    @staticmethod
+    def _rename_camera_id(camera, new_id):
+        # Django decides INSERT vs UPDATE by primary key value, so a plain
+        # save() with a new id would create a second row rather than
+        # renaming this one. Instead: create the new row, re-point its
+        # Images, then delete the old row — all as one transaction. The old
+        # row's slug/ftp_username are freed to a placeholder first since
+        # both are unique and the new row needs the real values before the
+        # old row goes away.
+        with transaction.atomic():
+            placeholder = generate_credential()
+            Camera.objects.filter(pk=camera.pk).update(
+                ftp_username=placeholder, slug=f"migrating-{placeholder}"
+            )
+            new_camera = Camera.objects.create(
+                id=new_id,
+                secret=camera.secret,
+                location=camera.location,
+                name=camera.name,
+                slug=camera.slug,
+                hidden=camera.hidden,
+                ftp_username=camera.ftp_username,
+                ftp_password=camera.ftp_password,
+                order=camera.order,
+                remote_pull_enabled=camera.remote_pull_enabled,
+                remote_pull_use_location_ddns=camera.remote_pull_use_location_ddns,
+                remote_pull_url=camera.remote_pull_url,
+                remote_pull_timeout=camera.remote_pull_timeout,
+            )
+            Image.objects.filter(camera_id=camera.pk).update(camera=new_camera)
+            Camera.objects.filter(pk=camera.pk).delete()
 
 
 @admin.register(Image)

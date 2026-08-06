@@ -56,7 +56,7 @@ class Location(models.Model):
 
 
 class Camera(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     secret = models.UUIDField(default=uuid.uuid4)
 
     location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name="cameras")
