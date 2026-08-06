@@ -1,4 +1,4 @@
-import random
+import secrets
 import string
 import uuid
 
@@ -9,7 +9,7 @@ ALPHANUMERIC = string.ascii_letters + string.digits
 
 
 def generate_credential(length=12):
-    return "".join(random.choices(ALPHANUMERIC, k=length))
+    return "".join(secrets.choice(ALPHANUMERIC) for _ in range(length))
 
 
 class Location(models.Model):
