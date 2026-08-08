@@ -284,10 +284,10 @@ A ready-to-copy version of the above lives at
 
 ## Housekeeping
 
-A daily cron job (`southramp` user, 3:15am, see `crontab -l`) runs
+An hourly cron job (`southramp` user, see `crontab -l`) runs
 `scripts/delete_old_images.sh`, which deletes `Image` rows (and their
-files, and any `EmbedImage` rows/files generated from them) older than 5
-days via `manage.py delete_old_images`.
+files, and any `EmbedImage` rows/files generated from them) older than 1
+hour via `manage.py delete_old_images`.
 
 A second cron job (`southramp` user, every 2 minutes) runs
 `scripts/pull_remote_images.sh` — see [Remote Pull](#remote-pull) above.
