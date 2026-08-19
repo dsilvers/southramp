@@ -4,6 +4,11 @@ from pyftpdlib.handlers import FTPHandler
 
 
 class CameraUploadHandler(FTPHandler):
+    # PORT/EPRT aren't in pyftpdlib's default log_cmds_list, so active-mode
+    # connect outcomes (200 connected / 421 timeout / 425 can't connect) are
+    # normally only logged at DEBUG. Cameras that can't be switched to
+    # passive mode need this visible at INFO to diagnose NAT/firewall issues.
+    log_cmds_list = FTPHandler.log_cmds_list + ["PORT", "EPRT"]
 
     def on_file_received(self, file_path):
         from cameras.models import Camera
