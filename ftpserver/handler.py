@@ -14,6 +14,15 @@ class CameraUploadHandler(FTPHandler):
             arg = "*" * 6
         self.log(f"{cmd} {arg} {respcode} {respstr!r}".strip())
 
+    def on_login(self, username):
+        # Some cameras never send TYPE I and stay in FTP's default ASCII
+        # mode, which makes pyftpdlib both reject REST (used for resumable
+        # uploads) and CRLF-translate the file bytes on STOR — silently
+        # corrupting binary image data. We only ever transfer images, so
+        # force binary mode regardless of what (if anything) the client
+        # negotiates.
+        self._current_type = "i"
+
     def on_file_received(self, file_path):
         from cameras.models import Camera
         from cameras.utils import InvalidImageError, save_camera_image
