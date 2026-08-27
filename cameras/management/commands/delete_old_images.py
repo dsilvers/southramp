@@ -26,7 +26,7 @@ class Command(BaseCommand):
         qs = Image.objects.filter(taken_at__lt=cutoff)
         count = qs.count()
 
-        for image in qs.prefetch_related("embeds").iterator():
+        for image in qs.prefetch_related("embeds").iterator(chunk_size=200):
             for embed in image.embeds.all():
                 self._delete_file(embed.file)
             self._delete_file(image.file)
