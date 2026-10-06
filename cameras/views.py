@@ -174,8 +174,9 @@ def camera_images_json(request, location_slug, camera_slug):
             {
                 "id": img.pk,
                 "url": img.file.url,
+                "thumb_url": img.thumbnail_url,
                 "taken_at": img.taken_at.isoformat(),
-                "stale": _is_stale(img),
+                "time": timezone.localtime(img.taken_at).strftime("%H:%M"),
             }
             for img in page
         ],

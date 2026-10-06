@@ -87,5 +87,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # App-specific settings
 CAMERA_STALE_MINUTES = int(os.environ.get("CAMERA_STALE_MINUTES", "15"))
-CAMERA_STRIP_INITIAL = 5
+CAMERA_STRIP_INITIAL = 25
 CAMERA_STRIP_PAGE_SIZE = 10

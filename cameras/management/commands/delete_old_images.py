@@ -7,7 +7,7 @@ from cameras.models import Image
 
 
 class Command(BaseCommand):
-    help = "Deletes Image rows (and their files, and any resized embeds) older than a given age (default 5 days)."
+    help = "Deletes Image rows (and their files, thumbnails, and any resized embeds) older than a given age (default 5 days)."
 
     def add_arguments(self, parser):
         parser.add_argument("--days", type=float, default=None)
@@ -29,6 +29,7 @@ class Command(BaseCommand):
         for image in qs.prefetch_related("embeds").iterator(chunk_size=200):
             for embed in image.embeds.all():
                 self._delete_file(embed.file)
+            self._delete_file(image.thumbnail)
             self._delete_file(image.file)
 
         qs.delete()

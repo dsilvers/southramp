@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static camera_extras %}
+{% load static %}
 
 {% block title %}{{ camera.name }} - Not South Ramp ✈{% endblock %}
 {% block og_title %}{{ camera.name }} - Not South Ramp ✈{% endblock %}
@@ -20,13 +20,17 @@
 
   <div id="strip" class="thumbnail-strip">
     {% for img in strip %}
-      <img class="thumb {% if img|is_stale %}stale{% endif %}"
-           src="{{ img.file.url }}"
-           data-id="{{ img.pk }}"
-           data-taken-at="{{ img.taken_at.isoformat }}"
-           data-full="{{ img.file.url }}">
+      <figure class="thumb"
+              data-id="{{ img.pk }}"
+              data-taken-at="{{ img.taken_at.isoformat }}"
+              data-time="{{ img.taken_at|date:"H:i" }}"
+              data-full="{{ img.file.url }}">
+        <img src="{{ img.thumbnail_url }}" loading="lazy" alt="">
+        <figcaption>{{ img.taken_at|date:"H:i" }}</figcaption>
+      </figure>
     {% endfor %}
     <div id="strip-loading" class="strip-loading" hidden>loading&hellip;</div>
+    <div id="strip-sentinel" class="strip-sentinel"></div>
   </div>
 </div>
 {% endblock %}

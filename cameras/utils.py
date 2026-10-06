@@ -5,6 +5,7 @@ from django.utils import timezone
 from PIL import Image as PILImage
 
 JPEG_EXTS = (".jpg", ".jpeg")
+THUMBNAIL_WIDTH = 640
 
 
 class InvalidImageError(ValueError):
@@ -44,9 +45,22 @@ def save_camera_image(camera, file_obj, original_filename):
 
     jpg_bytes, jpg_filename = normalize_to_jpg(file_obj, original_filename)
     image = Image(camera=camera, taken_at=timezone.now())
-    image.file.save(jpg_filename, ContentFile(jpg_bytes), save=True)
+    image.file.save(jpg_filename, ContentFile(jpg_bytes), save=False)
+    stem = jpg_filename.rsplit(".", 1)[0]
+    image.thumbnail.save(f"{stem}_thumb.jpg", ContentFile(make_thumbnail(jpg_bytes)), save=False)
+    image.save()
     generate_embed_images(image)
     return image
+
+
+def make_thumbnail(jpg_bytes, width=THUMBNAIL_WIDTH):
+    """Returns JPEG bytes scaled down to `width` (never up), keeping aspect ratio."""
+    with PILImage.open(io.BytesIO(jpg_bytes)) as im:
+        im = im.convert("RGB")
+        im.thumbnail((width, im.height), PILImage.LANCZOS)
+        buf = io.BytesIO()
+        im.save(buf, "JPEG", quality=80, optimize=True)
+        return buf.getvalue()
 
 
 def generate_embed_images(image):

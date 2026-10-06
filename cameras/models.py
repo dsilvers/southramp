@@ -138,11 +138,17 @@ def camera_image_upload_to(instance, filename):
 class Image(models.Model):
     camera = models.ForeignKey(Camera, on_delete=models.CASCADE, related_name="images")
     file = models.ImageField(upload_to=camera_image_upload_to)
+    thumbnail = models.ImageField(upload_to=camera_image_upload_to, blank=True)
     taken_at = models.DateTimeField(db_index=True)
 
     class Meta:
         ordering = ["-taken_at"]
         indexes = [models.Index(fields=["camera", "-taken_at"])]
+
+    @property
+    def thumbnail_url(self):
+        # Images saved before thumbnails existed fall back to the full file.
+        return self.thumbnail.url if self.thumbnail else self.file.url
 
     def __str__(self):
         return f"{self.camera.name} @ {self.taken_at:%Y-%m-%d %H:%M}"

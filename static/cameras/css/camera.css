@@ -127,19 +127,33 @@ a:hover {
 .thumbnail-strip .thumb {
   flex: 0 0 auto;
   width: 160px;
-  height: 90px;
-  object-fit: cover;
+  margin: 0;
   cursor: pointer;
   scroll-snap-align: start;
   opacity: 0.85;
+}
+
+.thumbnail-strip .thumb img {
+  display: block;
+  width: 160px;
+  height: 90px;
+  object-fit: cover;
+}
+
+.thumbnail-strip .thumb figcaption {
+  text-align: center;
+  font-size: 1.1em;
+  line-height: 1.2;
+  padding-top: 2px;
 }
 
 .thumbnail-strip .thumb:hover {
   opacity: 1;
 }
 
-.thumbnail-strip .thumb.stale {
-  outline: 2px solid red;
+.strip-sentinel {
+  flex: 0 0 1px;
+  align-self: stretch;
 }
 
 .strip-loading {
