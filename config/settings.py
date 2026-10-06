@@ -82,8 +82,8 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 # Hashed filenames (camera.3f2a1b.css) so nginx's long cache never serves
 # stale CSS/JS after a deploy. Requires collectstatic before restarting.
 STORAGES = {
-    "default": {"backend": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"backend": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"},
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"},
 }
 
 MEDIA_URL = "/media/"
