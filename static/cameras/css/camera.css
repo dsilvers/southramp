@@ -148,19 +148,3 @@ a:hover {
   opacity: 1;
 }
 
-.strip-sentinel {
-  grid-column: 1 / -1;
-  height: 1px;
-}
-
-.strip-loading {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 10px 0;
-  font-size: 1.2em;
-  color: #666;
-}
-
-.strip-loading[hidden] {
-  display: none;
-}

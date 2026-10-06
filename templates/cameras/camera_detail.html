@@ -5,7 +5,7 @@
 {% block og_title %}{{ camera.name }} - Not South Ramp ✈{% endblock %}
 
 {% block content %}
-<div class="camera-detail" data-location-slug="{{ camera.location.slug }}" data-camera-slug="{{ camera.slug }}" data-page-size="{{ page_size }}">
+<div class="camera-detail">
   <div class="main-image-wrap">
     {% if latest %}
       <img id="main-image" src="{{ latest.file.url }}" alt="{{ camera.name }}">
@@ -21,7 +21,6 @@
   <div id="strip" class="thumbnail-grid">
     {% for img in strip %}
       <figure class="thumb"
-              data-id="{{ img.pk }}"
               data-taken-at="{{ img.taken_at.isoformat }}"
               data-time="{{ img.taken_at|date:"H:i" }}"
               data-full="{{ img.file.url }}">
@@ -29,8 +28,6 @@
         <figcaption>{{ img.taken_at|date:"H:i" }}</figcaption>
       </figure>
     {% endfor %}
-    <div id="strip-loading" class="strip-loading" hidden>loading&hellip;</div>
-    <div id="strip-sentinel" class="strip-sentinel"></div>
   </div>
 </div>
 {% endblock %}

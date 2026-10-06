@@ -4,7 +4,7 @@ import secrets
 import uuid
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.templatetags.static import static
 from django.utils import timezone
@@ -84,7 +84,6 @@ def camera_detail(request, location_slug, camera_slug):
         "latest": latest,
         "is_stale": _is_stale(latest),
         "strip": strip,
-        "page_size": settings.CAMERA_STRIP_PAGE_SIZE,
         "og_image_url": og_image_url,
     })
 
@@ -149,39 +148,6 @@ def ddns_update(request):
     location.save(update_fields=["last_known_ip", "ip_updated_at"])
 
     return HttpResponse(f"good {ip}")
-
-
-def camera_images_json(request, location_slug, camera_slug):
-    camera = get_object_or_404(Camera, location__slug=location_slug, slug=camera_slug)
-
-    try:
-        before_id = int(request.GET.get("before_id", 0)) or None
-    except ValueError:
-        before_id = None
-
-    qs = camera.images.order_by("-taken_at")
-    if before_id:
-        anchor = camera.images.filter(pk=before_id).first()
-        if anchor:
-            qs = qs.filter(taken_at__lt=anchor.taken_at)
-
-    page_size = settings.CAMERA_STRIP_PAGE_SIZE
-    page = list(qs[:page_size])
-    has_more = camera.images.filter(taken_at__lt=page[-1].taken_at).exists() if page else False
-
-    return JsonResponse({
-        "images": [
-            {
-                "id": img.pk,
-                "url": img.file.url,
-                "thumb_url": img.thumbnail_url,
-                "taken_at": img.taken_at.isoformat(),
-                "time": timezone.localtime(img.taken_at).strftime("%H:%M"),
-            }
-            for img in page
-        ],
-        "has_more": has_more,
-    })
 
 
 def embed_redirect(request, camera_id, width, ignored=None):
