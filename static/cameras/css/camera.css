@@ -115,52 +115,48 @@ a:hover {
   color: red;
 }
 
-.thumbnail-strip {
-  display: flex;
-  gap: 8px;
+.thumbnail-grid {
+  display: grid;
+  /* ~3 columns on a phone, ~10 on a wide desktop. */
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px 8px;
   margin-top: 12px;
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  padding-bottom: 6px;
 }
 
-.thumbnail-strip .thumb {
-  flex: 0 0 auto;
-  width: 160px;
+.thumbnail-grid .thumb {
   margin: 0;
   cursor: pointer;
-  scroll-snap-align: start;
   opacity: 0.85;
 }
 
-.thumbnail-strip .thumb img {
+.thumbnail-grid .thumb img {
   display: block;
-  width: 160px;
-  height: 90px;
+  width: 100%;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
+  background: #111;
 }
 
-.thumbnail-strip .thumb figcaption {
+.thumbnail-grid .thumb figcaption {
   text-align: center;
   font-size: 1.1em;
   line-height: 1.2;
   padding-top: 2px;
 }
 
-.thumbnail-strip .thumb:hover {
+.thumbnail-grid .thumb:hover {
   opacity: 1;
 }
 
 .strip-sentinel {
-  flex: 0 0 1px;
-  align-self: stretch;
+  grid-column: 1 / -1;
+  height: 1px;
 }
 
 .strip-loading {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 10px 0;
   font-size: 1.2em;
   color: #666;
 }

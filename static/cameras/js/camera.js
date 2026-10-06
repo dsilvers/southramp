@@ -20,20 +20,14 @@ document.addEventListener("DOMContentLoaded", () => {
     mainTs.dataset.takenAt = thumb.dataset.takenAt;
     // "Stale" describes the live feed, not a deliberately picked history frame.
     mainTs.classList.remove("stale");
+    // The grid can run well below the fold; bring the swapped image into view.
+    mainImg.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   strip.addEventListener("click", (e) => {
     const thumb = e.target.closest(".thumb");
     if (thumb) swapMain(thumb);
   });
-
-  // Let a vertical mouse wheel scroll the horizontal strip.
-  strip.addEventListener("wheel", (e) => {
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && strip.scrollWidth > strip.clientWidth) {
-      strip.scrollLeft += e.deltaY;
-      e.preventDefault();
-    }
-  }, { passive: false });
 
   function makeThumb(img) {
     const fig = document.createElement("figure");
@@ -56,9 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function sentinelVisible() {
-    const s = sentinel.getBoundingClientRect();
-    const r = strip.getBoundingClientRect();
-    return s.left < r.right + 200;
+    return sentinel.getBoundingClientRect().top < window.innerHeight + 400;
   }
 
   async function loadMore() {
@@ -83,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // The observer only fires on visibility *changes*, so if the strip still
-    // doesn't reach past the viewport (wide screens), keep filling it.
+    // doesn't reach past the bottom of the viewport, keep filling it.
     if (hasMore && sentinelVisible()) loadMore();
   }
 
@@ -91,6 +83,6 @@ document.addEventListener("DOMContentLoaded", () => {
     (entries) => {
       if (entries.some((e) => e.isIntersecting)) loadMore();
     },
-    { root: strip, rootMargin: "0px 200px 0px 0px" }
+    { rootMargin: "0px 0px 400px 0px" }
   ).observe(sentinel);
 });

@@ -79,6 +79,12 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+# Hashed filenames (camera.3f2a1b.css) so nginx's long cache never serves
+# stale CSS/JS after a deploy. Requires collectstatic before restarting.
+STORAGES = {
+    "default": {"backend": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"backend": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"},
+}
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "mediafiles"
@@ -88,4 +94,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # App-specific settings
 CAMERA_STALE_MINUTES = int(os.environ.get("CAMERA_STALE_MINUTES", "15"))
 CAMERA_STRIP_INITIAL = 25
-CAMERA_STRIP_PAGE_SIZE = 10
+CAMERA_STRIP_PAGE_SIZE = 25
