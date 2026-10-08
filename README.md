@@ -286,8 +286,10 @@ A ready-to-copy version of the above lives at
 
 An hourly cron job (`southramp` user, see `crontab -l`) runs
 `scripts/delete_old_images.sh`, which deletes `Image` rows (and their
-files, and any `EmbedImage` rows/files generated from them) older than 1
-hour via `manage.py delete_old_images`.
+files, and any `EmbedImage` rows/files generated from them) older than 24
+hours via `manage.py delete_old_images`. Embeds are only ever served for
+each camera's latest image, so the same run also deletes embeds older than 1
+hour (`--embed-hours`) on every other image.
 
 A second cron job (`southramp` user, every 2 minutes) runs
 `scripts/pull_remote_images.sh` — see [Remote Pull](#remote-pull) above.
