@@ -1,5 +1,6 @@
 import os
 
+from django.db import close_old_connections
 from pyftpdlib.handlers import FTPHandler
 
 
@@ -27,6 +28,8 @@ class CameraUploadHandler(FTPHandler):
         from cameras.models import Camera
         from cameras.utils import InvalidImageError, save_camera_image
 
+        # See DjangoCameraAuthorizer._get_camera.
+        close_old_connections()
         camera = Camera.objects.filter(id=self.camera_id).first()
         if camera is None:
             os.remove(file_path)

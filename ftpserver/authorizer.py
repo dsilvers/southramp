@@ -1,6 +1,7 @@
 import logging
 import os
 
+from django.db import close_old_connections
 from pyftpdlib.authorizers import AuthenticationFailed
 
 logger = logging.getLogger("ftpserver.auth")
@@ -20,6 +21,11 @@ class DjangoCameraAuthorizer:
     def _get_camera(self, username):
         from cameras.models import Camera
 
+        # This process lives for days, outside Django's request cycle, so
+        # nothing else ever discards its DB connection. Drop it before each
+        # lookup (CONN_MAX_AGE=0) so a Postgres restart or idle timeout
+        # can't leave every later login failing on a dead connection.
+        close_old_connections()
         return Camera.objects.filter(ftp_username=username).first()
 
     def validate_authentication(self, username, password, handler):
